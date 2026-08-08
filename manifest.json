@@ -1,0 +1,16 @@
+{
+  "name": "Ledger — Weight, Compounded",
+  "short_name": "Ledger",
+  "description": "A premium, personalized weight-loss ledger with a quiz-built plan, streak rewards, and a projected close date.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#12130F",
+  "theme_color": "#12130F",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
