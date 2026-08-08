@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ledger — Your Weight, Compounded</title>
+<meta name="description" content="A premium, personalized weight-loss ledger. Quiz-built plan, daily entries, streak interest, and a projected close date.">
+<meta name="theme-color" content="#12130F">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ledger">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#12130F;
+    --ink-2:#191b14;
+    --panel:#1d1f18;
+    --rule:#33352a;
+    --cream:#F1EDE3;
+    --cream-dim:#b9b6a9;
+    --brass:#C9A227;
+    --brass-soft:#8f7521;
+    --sage:#5C8374;
+    --rust:#B4552B;
+    --radius:14px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0; height:100%; background:var(--ink); color:var(--cream);}
+  body{
+    font-family:'IBM Plex Sans', sans-serif;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  .serif{font-family:'Fraunces', serif;}
+  .mono{font-family:'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums;}
+  #app{max-width:520px; margin:0 auto; min-height:100vh; position:relative; padding-bottom:env(safe-area-inset-bottom);}
+
+  /* ---------- shared ---------- */
+  .screen{display:none; padding:28px 22px 40px; animation:fade .35s ease;}
+  .screen.active{display:block;}
+  @keyframes fade{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+  .eyebrow{
+    text-transform:uppercase; letter-spacing:.14em; font-size:11px; color:var(--brass);
+    font-weight:600; margin-bottom:8px;
+  }
+  .rule{border:none; border-top:1px solid var(--rule); margin:18px 0;}
+  h1.brand{font-size:26px; font-weight:600; margin:0; letter-spacing:.01em;}
+  h1.brand .dot{color:var(--brass);}
+  p.sub{color:var(--cream-dim); font-size:14.5px; line-height:1.5; margin:8px 0 0;}
+
+  /* ---------- intro ---------- */
+  #intro{padding-top:14vh;}
+  .ledger-mark{
+    width:46px; height:46px; border:1.5px solid var(--brass); border-radius:10px;
+    display:flex; align-items:center; justify-content:center; margin-bottom:22px;
+    color:var(--brass); font-family:'Fraunces',serif; font-size:22px;
+  }
+  .intro-title{font-size:38px; line-height:1.08; font-weight:500; margin:0 0 14px;}
+  .intro-title em{font-style:italic; color:var(--brass);}
+  .btn{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    width:100%; padding:16px 20px; border-radius:999px; border:none;
+    font-family:'IBM Plex Sans',sans-serif; font-size:15px; font-weight:600;
+    cursor:pointer; transition:transform .12s ease, opacity .12s ease;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn-primary{background:var(--brass); color:#151505;}
+  .btn-primary:disabled{opacity:.35; pointer-events:none;}
+  .btn-ghost{background:transparent; color:var(--cream-dim); border:1px solid var(--rule);}
+  .btn-row{display:flex; gap:10px; margin-top:26px;}
+  .btn-row .btn{flex:1;}
+  .fine{font-size:12px; color:var(--cream-dim); text-align:center; margin-top:14px; line-height:1.5;}
+
+  /* ---------- quiz ---------- */
+  .progress-track{height:3px; background:var(--rule); border-radius:2px; overflow:hidden; margin-bottom:26px;}
+  .progress-fill{height:100%; background:var(--brass); width:0%; transition:width .3s ease;}
+  .q-index{font-size:12px; color:var(--cream-dim); margin-bottom:6px;}
+  .q-text{font-size:22px; font-weight:500; line-height:1.3; margin:0 0 22px; font-family:'Fraunces',serif;}
+  .opt{
+    display:block; width:100%; text-align:left; padding:15px 16px; margin-bottom:10px;
+    background:var(--panel); border:1px solid var(--rule); border-radius:12px;
+    color:var(--cream); font-size:15px; cursor:pointer; transition:border-color .15s,background .15s;
+  }
+  .opt:active{transform:scale(.99);}
+  .opt.selected{border-color:var(--brass); background:#232414;}
+  .opt .opt-check{float:right; color:var(--brass); opacity:0; font-weight:600;}
+  .opt.selected .opt-check{opacity:1;}
+  input.num-input, input.text-input{
+    width:100%; padding:16px; font-size:20px; border-radius:12px;
+    background:var(--panel); border:1px solid var(--rule); color:var(--cream);
+    font-family:'IBM Plex Mono',monospace;
+  }
+  input.num-input:focus, input.text-input:focus{outline:none; border-color:var(--brass);}
+  .unit-row{display:flex; gap:10px;}
+  .unit-toggle{display:flex; gap:8px; margin-bottom:14px;}
+  .unit-btn{padding:8px 14px; border-radius:999px; border:1px solid var(--rule); background:transparent; color:var(--cream-dim); font-size:12.5px; cursor:pointer;}
+  .unit-btn.active{border-color:var(--brass); color:var(--brass);}
+  .quiz-nav{display:flex; justify-content:space-between; align-items:center; margin-top:28px;}
+  .link-back{color:var(--cream-dim); font-size:13px; background:none; border:none; cursor:pointer;}
+
+  /* ---------- computing ---------- */
+  #computing{padding-top:30vh; text-align:center;}
+  .spinner{
+    width:34px; height:34px; margin:0 auto 22px; border-radius:50%;
+    border:2px solid var(--rule); border-top-color:var(--brass);
+    animation:spin 0.9s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  #computing p{color:var(--cream-dim); font-size:14px;}
+
+  /* ---------- plan reveal ---------- */
+  .plan-card{
+    background:linear-gradient(160deg,#1d1f18,#171912);
+    border:1px solid var(--rule); border-radius:18px; padding:24px; margin-top:18px;
+  }
+  .plan-row{display:flex; justify-content:space-between; align-items:baseline; padding:10px 0; border-bottom:1px solid var(--rule);}
+  .plan-row:last-child{border-bottom:none;}
+  .plan-label{font-size:13px; color:var(--cream-dim);}
+  .plan-value{font-size:16px; font-weight:600;}
+  .plan-value.big{font-size:22px; color:var(--brass); font-family:'Fraunces',serif;}
+  .date-hero{
+    text-align:center; margin:22px 0 6px;
+  }
+  .date-hero .label{font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--cream-dim);}
+  .date-hero .date{font-family:'Fraunces',serif; font-size:34px; color:var(--brass); margin-top:6px;}
+
+  /* ---------- dashboard ---------- */
+  header.dash-head{
+    position:sticky; top:0; z-index:5; background:var(--ink);
+    padding:18px 22px 12px; display:flex; justify-content:space-between; align-items:center;
+    border-bottom:1px solid var(--rule);
+  }
+  .streak-pill{
+    display:flex; align-items:center; gap:6px; background:var(--panel);
+    border:1px solid var(--rule); padding:6px 12px; border-radius:999px; font-size:13px;
+  }
+  .streak-pill .flame{color:var(--brass);}
+  main.dash-body{padding:20px 22px 100px;}
+  .ticker-card{
+    background:var(--panel); border:1px solid var(--rule); border-radius:16px; padding:20px; margin-bottom:16px;
+  }
+  .ticker-top{display:flex; justify-content:space-between; align-items:center;}
+  .ticker-label{font-size:12px; color:var(--cream-dim); text-transform:uppercase; letter-spacing:.08em;}
+  .ticker-num{font-family:'IBM Plex Mono',monospace; font-size:30px; font-weight:600; margin-top:4px;}
+  .ticker-num .unit{font-size:14px; color:var(--cream-dim); font-weight:400;}
+  .delta{font-size:12.5px; margin-top:2px;}
+  .delta.pos{color:var(--sage);}
+  .delta.neg{color:var(--rust);}
+  .bar-track{height:6px; background:var(--rule); border-radius:4px; overflow:hidden; margin-top:14px;}
+  .bar-fill{height:100%; background:linear-gradient(90deg,var(--brass-soft),var(--brass)); border-radius:4px; transition:width .5s ease;}
+  .close-date{margin-top:14px; display:flex; justify-content:space-between; font-size:12.5px; color:var(--cream-dim);}
+  .close-date b{color:var(--cream); font-weight:600;}
+
+  .section-title{font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--cream-dim); margin:26px 0 10px;}
+  .entry-row{
+    display:flex; justify-content:space-between; align-items:center; padding:13px 0; border-bottom:1px solid var(--rule);
+  }
+  .entry-left{display:flex; flex-direction:column;}
+  .entry-date{font-size:13.5px;}
+  .entry-note{font-size:11.5px; color:var(--cream-dim);}
+  .entry-weight{font-family:'IBM Plex Mono',monospace; font-size:15px;}
+  .empty-note{color:var(--cream-dim); font-size:13.5px; padding:14px 0;}
+
+  .badge-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:8px;}
+  .badge{
+    aspect-ratio:1; border-radius:12px; background:var(--panel); border:1px solid var(--rule);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+    font-size:10px; text-align:center; color:var(--cream-dim); padding:4px;
+  }
+  .badge.unlocked{border-color:var(--brass); color:var(--cream); background:#232414;}
+  .badge .b-icon{font-size:18px;}
+  .badge.unlocked .b-icon{color:var(--brass);}
+
+  .fab{
+    position:fixed; left:50%; transform:translateX(-50%); bottom:22px; z-index:10;
+    max-width:476px; width:calc(100% - 44px);
+  }
+
+  /* log modal */
+  .sheet-backdrop{
+    position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:20; display:none;
+  }
+  .sheet-backdrop.active{display:block;}
+  .sheet{
+    position:fixed; left:0; right:0; bottom:0; z-index:21; max-width:520px; margin:0 auto;
+    background:var(--ink-2); border-radius:20px 20px 0 0; border:1px solid var(--rule); border-bottom:none;
+    padding:22px 22px calc(24px + env(safe-area-inset-bottom));
+    transform:translateY(100%); transition:transform .28s ease;
+  }
+  .sheet.active{transform:translateY(0);}
+  .sheet-handle{width:36px; height:4px; background:var(--rule); border-radius:2px; margin:0 auto 18px;}
+  .sheet h2{font-family:'Fraunces',serif; font-size:20px; font-weight:500; margin:0 0 16px;}
+  .toast{
+    position:fixed; bottom:100px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--brass); color:#151505; padding:12px 20px; border-radius:999px; font-size:13.5px;
+    font-weight:600; opacity:0; transition:all .3s ease; z-index:30; white-space:nowrap;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  a{color:var(--brass);}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ INTRO ============ -->
+  <section id="intro" class="screen active">
+    <div class="ledger-mark">L</div>
+    <h1 class="intro-title">Weight loss,<br><em>compounded</em> daily.</h1>
+    <p class="sub">Ledger builds your plan from a short intake, then tracks every entry like a real ledger — streaks earn interest, milestones pay out badges, and your close date updates as you go.</p>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="goTo('quiz')">Open an account</button>
+    </div>
+    <p class="fine">Free plan included. Premium unlocks projections, unlimited badges &amp; data export — see settings after setup.<br>Not medical advice. Consult a professional for guidance specific to you.</p>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section id="quiz" class="screen">
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="q-index" id="qIndex">Question 1 of 14</div>
+    <div id="qContainer"></div>
+    <div class="quiz-nav">
+      <button class="link-back" id="backBtn" onclick="prevQ()">← Back</button>
+    </div>
+  </section>
+
+  <!-- ============ COMPUTING ============ -->
+  <section id="computing" class="screen">
+    <div class="spinner"></div>
+    <p id="computingText" class="mono">Reconciling your ledger…</p>
+  </section>
+
+  <!-- ============ PLAN REVEAL ============ -->
+  <section id="reveal" class="screen">
+    <div class="eyebrow">Statement Ready</div>
+    <h1 class="brand serif">Your opening ledger<span class="dot">.</span></h1>
+    <p class="sub" id="revealSub"></p>
+
+    <div class="date-hero">
+      <div class="label">Projected close date</div>
+      <div class="date" id="closeDateHero">—</div>
+    </div>
+
+    <div class="plan-card">
+      <div class="plan-row"><span class="plan-label">Daily target intake</span><span class="plan-value big" id="planCalories">—</span></div>
+      <div class="plan-row"><span class="plan-label">Maintenance (TDEE)</span><span class="plan-value mono" id="planTDEE">—</span></div>
+      <div class="plan-row"><span class="plan-label">Daily deficit</span><span class="plan-value mono" id="planDeficit">—</span></div>
+      <div class="plan-row"><span class="plan-label">Pace</span><span class="plan-value" id="planPace">—</span></div>
+      <div class="plan-row"><span class="plan-label">Total to lose</span><span class="plan-value mono" id="planTotal">—</span></div>
+    </div>
+    <p class="fine" id="safetyNote"></p>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="finishOnboarding()">Enter the ledger →</button>
+    </div>
+  </section>
+
+  <!-- ============ DASHBOARD ============ -->
+  <section id="dashboard" class="screen">
+    <header class="dash-head">
+      <h1 class="brand serif" style="font-size:20px;">Ledger<span class="dot">.</span></h1>
+      <div class="streak-pill"><span class="flame">◆</span><span id="streakCount" class="mono">0</span>&nbsp;day streak</div>
+    </header>
+    <main class="dash-body">
+
+      <div class="ticker-card">
+        <div class="ticker-top">
+          <div>
+            <div class="ticker-label">Current balance</div>
+            <div class="ticker-num" id="currentWeightNum">—<span class="unit"> </span></div>
+            <div class="delta" id="weightDelta"></div>
+          </div>
+          <div style="text-align:right;">
+            <div class="ticker-label">Goal</div>
+            <div class="ticker-num" id="goalWeightNum" style="font-size:20px;">—</div>
+          </div>
+        </div>
+        <div class="bar-track"><div class="bar-fill" id="progressBar" style="width:0%;"></div></div>
+        <div class="close-date">
+          <span>Progress: <b id="progressPct">0%</b></span>
+          <span>Close: <b id="dashCloseDate">—</b></span>
+        </div>
+      </div>
+
+      <div class="section-title">Recent entries</div>
+      <div id="entryList"></div>
+
+      <div class="section-title">Badges earned</div>
+      <div class="badge-grid" id="badgeGrid"></div>
+
+      <div class="section-title">Account</div>
+      <div class="entry-row" style="cursor:pointer;" onclick="openSheet('premiumSheet')">
+        <span>Upgrade to Premium — projections &amp; export</span><span>›</span>
+      </div>
+      <div class="entry-row" style="cursor:pointer;" onclick="resetAccount()">
+        <span style="color:var(--rust);">Close account &amp; reset</span><span>›</span>
+      </div>
+    </main>
+
+    <div class="fab">
+      <button class="btn btn-primary" onclick="openSheet('logSheet')">＋ Log today's entry</button>
+    </div>
+  </section>
+
+</div>
+
+<!-- ============ LOG SHEET ============ -->
+<div class="sheet-backdrop" id="logBackdrop" onclick="closeSheet('logSheet')"></div>
+<div class="sheet" id="logSheet">
+  <div class="sheet-handle"></div>
+  <h2>Log today's entry</h2>
+  <label style="font-size:12.5px; color:var(--cream-dim);">Weight (<span id="logUnitLabel">lb</span>)</label>
+  <input class="num-input" id="logWeightInput" type="number" step="0.1" placeholder="0.0" style="margin-top:6px; margin-bottom:16px;">
+  <label style="font-size:12.5px; color:var(--cream-dim);">Note (optional)</label>
+  <input class="text-input" id="logNoteInput" type="text" placeholder="e.g. rest day, felt strong" style="margin-top:6px; margin-bottom:20px;">
+  <button class="btn btn-primary" onclick="submitEntry()">Save entry</button>
+</div>
+
+<!-- ============ PREMIUM SHEET ============ -->
+<div class="sheet-backdrop" id="premiumBackdrop" onclick="closeSheet('premiumSheet')"></div>
+<div class="sheet" id="premiumSheet">
+  <div class="sheet-handle"></div>
+  <h2>Ledger Premium</h2>
+  <p class="sub" style="margin-bottom:16px;">Everything is local to your phone — Premium just unlocks the rest of the ledger, no server, no subscription tricks.</p>
+  <div class="plan-card" style="margin-top:0;">
+    <div class="plan-row"><span class="plan-label">Trend projection chart</span><span class="plan-value" style="color:var(--brass);">✓</span></div>
+    <div class="plan-row"><span class="plan-label">Unlimited badge tiers</span><span class="plan-value" style="color:var(--brass);">✓</span></div>
+    <div class="plan-row"><span class="plan-label">CSV export of your ledger</span><span class="plan-value" style="color:var(--brass);">✓</span></div>
+    <div class="plan-row"><span class="plan-label">Custom close-date re-forecasts</span><span class="plan-value" style="color:var(--brass);">✓</span></div>
+  </div>
+  <button class="btn btn-primary" style="margin-top:18px;" onclick="unlockPremium()">Unlock Premium (local, free)</button>
+  <p class="fine">This build ships with Premium unlocked by default for you — it's your app and your data.</p>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===================== STATE ===================== */
+const LS_KEY = 'ledger_v1';
+let state = load() || { onboarded:false, premium:true, profile:{}, entries:[], answers:{} };
+
+function load(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)); }catch(e){ return null; } }
+function save(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+
+/* ===================== NAV ===================== */
+function goTo(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+/* ===================== QUIZ DEFINITION ===================== */
+const questions = [
+  { key:'sex', text:"What sex were you assigned at birth?", type:'choice', help:'Used only for the calorie-need formula.', options:['Female','Male'] },
+  { key:'age', text:"How old are you?", type:'number', unit:'years', min:14, max:90 },
+  { key:'heightUnit', text:"Height — pick a unit", type:'unit', options:['cm','ft/in'] },
+  { key:'height', text:"What's your height?", type:'height' },
+  { key:'weightUnit', text:"Weight — pick a unit", type:'unit', options:['kg','lb'] },
+  { key:'currentWeight', text:"What's your current weight?", type:'number', unit:'w' },
+  { key:'goalWeight', text:"What's your goal weight?", type:'number', unit:'w' },
+  { key:'activity', text:"How active is your day-to-day, outside intentional workouts?", type:'choice',
+    options:['Mostly sitting (desk job, little walking)','On my feet sometimes (light walking)','Fairly active (on my feet most of the day)','Physically demanding job or heavy training'] },
+  { key:'exercise', text:"How many days a week do you currently exercise?", type:'choice', options:['0','1–2','3–4','5+'] },
+  { key:'pace', text:"How would you like to pace this?", type:'choice',
+    options:['Gradual — smallest daily change','Steady — the common recommended pace','Faster — bigger daily change (shorter runway)'] },
+  { key:'diet', text:"Any dietary pattern I should factor into tone, not calories?", type:'choice',
+    options:['No particular pattern','Vegetarian','Vegan','Low-carb / keto-leaning','Halal / Kosher'] },
+  { key:'obstacle', text:"What usually derails a plan for you?", type:'choice',
+    options:['Late-night snacking','Eating out / social meals','Losing motivation after week 2–3','Inconsistent schedule / travel'] },
+  { key:'motivation', text:"What's the honest reason you're doing this now?", type:'choice',
+    options:['A specific event or date','Health markers (doctor, labs, energy)','How I feel in my clothes / photos','Building a long-term habit'] },
+  { key:'reminderTime', text:"When should Ledger nudge you to log?", type:'choice',
+    options:['Morning','Midday','Evening','Don\'t remind me'] },
+];
+
+let qi = 0;
+let heightUnitChoice = 'cm';
+let weightUnitChoice = 'lb';
+
+function renderQuestion(){
+  const total = questions.length;
+  document.getElementById('progressFill').style.width = ((qi)/total*100)+'%';
+  document.getElementById('qIndex').textContent = `Question ${qi+1} of ${total}`;
+  document.getElementById('backBtn').style.visibility = qi===0 ? 'hidden' : 'visible';
+  const q = questions[qi];
+  const c = document.getElementById('qContainer');
+  let html = `<div class="q-text">${q.text}</div>`;
+
+  if(q.type==='choice'){
+    html += q.options.map(opt=>`<button class="opt" data-val="${opt}" onclick="selectChoice('${q.key}','${opt.replace(/'/g,"\\'")}')">${opt}<span class="opt-check">✓</span></button>`).join('');
+  } else if(q.type==='unit'){
+    html += `<div class="unit-toggle">` + q.options.map(u=>`<button class="unit-btn" data-u="${u}" onclick="selectUnit('${q.key}','${u}')">${u}</button>`).join('') + `</div>
+      <p class="fine" style="text-align:left; margin-top:0;">Pick a unit, then continue.</p>
+      <div class="btn-row" style="margin-top:18px;"><button class="btn btn-primary" onclick="nextQ()">Continue</button></div>`;
+  } else if(q.type==='number'){
+    const label = q.unit==='w' ? (weightUnitChoice) : q.unit;
+    html += `<input class="num-input" id="numInput" type="number" step="0.1" placeholder="e.g. ${q.key==='age'?'27':'165'}" inputmode="decimal">
+      <p class="fine" style="text-align:left;">Unit: ${label}</p>
+      <div class="btn-row" style="margin-top:18px;"><button class="btn btn-primary" id="numNextBtn" disabled onclick="nextQ()">Continue</button></div>`;
+  } else if(q.type==='height'){
+    if(heightUnitChoice==='cm'){
+      html += `<input class="num-input" id="hCm" type="number" placeholder="e.g. 170" inputmode="decimal">
+        <p class="fine" style="text-align:left;">Centimeters</p>`;
+    } else {
+      html += `<div class="unit-row">
+        <input class="num-input" id="hFt" type="number" placeholder="ft" inputmode="decimal">
+        <input class="num-input" id="hIn" type="number" placeholder="in" inputmode="decimal">
+      </div>`;
+    }
+    html += `<div class="btn-row" style="margin-top:18px;"><button class="btn btn-primary" id="hNextBtn" disabled onclick="nextQ()">Continue</button></div>`;
+  }
+  c.innerHTML = html;
+
+  // restore prior selection
+  if(state.answers[q.key]!==undefined){
+    if(q.type==='choice'){
+      document.querySelectorAll('.opt').forEach(o=>{ if(o.dataset.val===state.answers[q.key]) o.classList.add('selected'); });
+    }
+  }
+  if(q.type==='number'){
+    const inp = document.getElementById('numInput');
+    inp.addEventListener('input', ()=>{ document.getElementById('numNextBtn').disabled = !inp.value; });
+    if(state.answers[q.key]!==undefined){ inp.value = state.answers[q.key]; document.getElementById('numNextBtn').disabled=false; }
+  }
+  if(q.type==='height'){
+    const checkH = ()=>{
+      const btn = document.getElementById('hNextBtn');
+      if(heightUnitChoice==='cm'){ btn.disabled = !document.getElementById('hCm').value; }
+      else { btn.disabled = !(document.getElementById('hFt').value); }
+    };
+    if(heightUnitChoice==='cm'){ document.getElementById('hCm').addEventListener('input', checkH); }
+    else { document.getElementById('hFt').addEventListener('input', checkH); document.getElementById('hIn').addEventListener('input', checkH); }
+  }
+}
+
+function selectChoice(key, val){
+  state.answers[key] = val;
+  document.querySelectorAll('.opt').forEach(o=>o.classList.remove('selected'));
+  document.querySelectorAll('.opt').forEach(o=>{ if(o.dataset.val===val) o.classList.add('selected'); });
+  save();
+  setTimeout(nextQ, 220);
+}
+function selectUnit(key, u){
+  if(key==='heightUnit') heightUnitChoice = u;
+  if(key==='weightUnit') weightUnitChoice = u;
+  state.answers[key]=u;
+  document.querySelectorAll('.unit-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll(`.unit-btn[data-u="${u}"]`).forEach(b=>b.classList.add('active'));
+}
+
+function nextQ(){
+  const q = questions[qi];
+  if(q.type==='number'){
+    state.answers[q.key] = parseFloat(document.getElementById('numInput').value);
+  }
+  if(q.type==='height'){
+    if(heightUnitChoice==='cm'){ state.answers.heightCm = parseFloat(document.getElementById('hCm').value); }
+    else {
+      const ft = parseFloat(document.getElementById('hFt').value)||0;
+      const inch = parseFloat(document.getElementById('hIn').value)||0;
+      state.answers.heightCm = (ft*12+inch)*2.54;
+    }
+  }
+  save();
+  if(qi < questions.length-1){ qi++; renderQuestion(); }
+  else { computePlan(); }
+}
+function prevQ(){ if(qi>0){ qi--; renderQuestion(); } }
+
+/* ===================== PLAN COMPUTATION ===================== */
+function toKg(w, unit){ return unit==='lb' ? w*0.453592 : w; }
+function toLb(w){ return w/0.453592; }
+
+function computePlan(){
+  goTo('computing');
+  const lines = ["Reconciling your ledger…","Weighing activity against intake…","Drafting your projection…","Almost done…"];
+  let i=0;
+  const txt = document.getElementById('computingText');
+  const int = setInterval(()=>{ i=(i+1)%lines.length; txt.textContent = lines[i]; }, 550);
+
+  setTimeout(()=>{
+    clearInterval(int);
+    const a = state.answers;
+    const sex = a.sex;
+    const age = a.age;
+    const heightCm = a.heightCm;
+    const curW_native = a.currentWeight;
+    const goalW_native = a.goalWeight;
+    const curKg = toKg(curW_native, weightUnitChoice);
+    const goalKg = toKg(goalW_native, weightUnitChoice);
+
+    // Mifflin-St Jeor BMR
+    let bmr;
+    if(sex==='Male'){ bmr = 10*curKg + 6.25*heightCm - 5*age + 5; }
+    else { bmr = 10*curKg + 6.25*heightCm - 5*age - 161; }
+
+    const activityMap = {
+      'Mostly sitting (desk job, little walking)':1.2,
+      'On my feet sometimes (light walking)':1.35,
+      'Fairly active (on my feet most of the day)':1.5,
+      'Physically demanding job or heavy training':1.7,
+    };
+    const exerciseBump = {'0':1, '1–2':1.03, '3–4':1.07, '5+':1.12};
+    let tdee = bmr * (activityMap[a.activity]||1.35) * (exerciseBump[a.exercise]||1);
+
+    const paceMap = { 'Gradual — smallest daily change':0.25, 'Steady — the common recommended pace':0.5, 'Faster — bigger daily change (shorter runway)':0.75 };
+    let weeklyLossKg = paceMap[a.pace] ?? 0.5;
+
+    let dailyDeficit = (weeklyLossKg*7700)/7; // 7700 kcal per kg of fat, roughly
+    let target = tdee - dailyDeficit;
+
+    // safety floor
+    const floor = sex==='Male' ? 1500 : 1200;
+    let capped = false;
+    if(target < floor){ target = floor; dailyDeficit = tdee - target; weeklyLossKg = (dailyDeficit*7)/7700; capped = true; }
+
+    const totalToLoseKg = Math.max(curKg - goalKg, 0);
+    const daysToGoal = totalToLoseKg>0 && weeklyLossKg>0 ? Math.ceil((totalToLoseKg/weeklyLossKg)*7) : 0;
+    const closeDate = new Date();
+    closeDate.setDate(closeDate.getDate()+daysToGoal);
+
+    state.profile = {
+      sex, age, heightCm, weightUnit: weightUnitChoice,
+      startWeightKg: curKg, goalWeightKg: goalKg,
+      tdee: Math.round(tdee), targetCalories: Math.round(target),
+      dailyDeficit: Math.round(dailyDeficit), weeklyLossKg,
+      totalToLoseKg, closeDateISO: closeDate.toISOString(),
+      capped, startDateISO: new Date().toISOString(),
+      reminderTime: a.reminderTime,
+    };
+    state.entries = state.entries.length ? state.entries : [{ date: new Date().toISOString(), weightKg: curKg, note:'Opening balance' }];
+    save();
+    renderReveal();
+    goTo('reveal');
+  }, 2200);
+}
+
+function fmtWeight(kg){
+  return weightUnitChoice==='lb' ? `${toLb(kg).toFixed(1)} lb` : `${kg.toFixed(1)} kg`;
+}
+function fmtDate(iso){
+  const d = new Date(iso);
+  return d.toLocaleDateString(undefined, { month:'short', day:'numeric', year:'numeric' });
+}
+
+function renderReveal(){
+  const p = state.profile;
+  document.getElementById('closeDateHero').textContent = fmtDate(p.closeDateISO);
+  document.getElementById('planCalories').textContent = `${p.targetCalories} kcal/day`;
+  document.getElementById('planTDEE').textContent = `${p.tdee} kcal`;
+  document.getElementById('planDeficit').textContent = `−${p.dailyDeficit} kcal`;
+  document.getElementById('planPace').textContent = `${weightUnitChoice==='lb' ? (p.weeklyLossKg*2.20462).toFixed(2)+' lb' : p.weeklyLossKg.toFixed(2)+' kg'} / week`;
+  document.getElementById('planTotal').textContent = fmtWeight(p.totalToLoseKg);
+  document.getElementById('revealSub').textContent = `Built from your intake — ${p.sex}, ${p.age}, ${Math.round(p.heightCm)}cm — reconciled against your goal of ${fmtWeight(p.goalWeightKg)}.`;
+  document.getElementById('safetyNote').textContent = p.capped
+    ? "Note: your requested pace was faster than a safe daily-calorie floor allows, so Ledger slowed your pace to protect a minimum intake. Consult a doctor or dietitian before pursuing an aggressive deficit."
+    : "This is a general estimate, not medical advice — check in with a doctor or dietitian for anything specific to your health.";
+}
+
+function finishOnboarding(){
+  state.onboarded = true;
+  save();
+  renderDashboard();
+  goTo('dashboard');
+}
+
+/* ===================== BADGES ===================== */
+const badgeDefs = [
+  { id:'first', icon:'①', name:'First entry', test:s=>s.entries.length>=1 },
+  { id:'streak3', icon:'③', name:'3-day streak', test:s=>computeStreak(s.entries)>=3 },
+  { id:'streak7', icon:'⑦', name:'7-day streak', test:s=>computeStreak(s.entries)>=7 },
+  { id:'streak30', icon:'㉚', name:'30-day streak', test:s=>computeStreak(s.entries)>=30 },
+  { id:'p10', icon:'10%', name:'10% to goal', test:s=>progressPct(s)>=10 },
+  { id:'p50', icon:'50%', name:'Halfway', test:s=>progressPct(s)>=50 },
+  { id:'p100', icon:'★', name:'Goal reached', test:s=>progressPct(s)>=100 },
+  { id:'entries10', icon:'10×', name:'10 entries logged', test:s=>s.entries.length>=10 },
+];
+
+function computeStreak(entries){
+  if(!entries.length) return 0;
+  const days = [...new Set(entries.map(e=> new Date(e.date).toDateString()))].sort((a,b)=> new Date(b)-new Date(a));
+  let streak=0;
+  let cursor = new Date();
+  for(const d of days){
+    const dayDate = new Date(d);
+    const diff = Math.round((cursor.setHours(0,0,0,0) - dayDate.setHours(0,0,0,0))/86400000);
+    if(diff===0 || diff===streak){ streak++; cursor = dayDate; }
+    else break;
+  }
+  return streak;
+}
+function progressPct(s){
+  const p = s.profile;
+  if(!p || p.totalToLoseKg<=0) return 0;
+  const latest = s.entries[s.entries.length-1].weightKg;
+  const lost = p.startWeightKg - latest;
+  return Math.max(0, Math.min(100, (lost/p.totalToLoseKg)*100));
+}
+
+/* ===================== DASHBOARD ===================== */
+function renderDashboard(){
+  const p = state.profile;
+  const latestEntry = state.entries[state.entries.length-1];
+  const latest = latestEntry.weightKg;
+  const prev = state.entries.length>1 ? state.entries[state.entries.length-2].weightKg : latest;
+  const diff = latest - prev;
+
+  document.getElementById('currentWeightNum').innerHTML = `${weightUnitChoice==='lb'?toLb(latest).toFixed(1):latest.toFixed(1)}<span class="unit"> ${weightUnitChoice}</span>`;
+  document.getElementById('goalWeightNum').textContent = `${weightUnitChoice==='lb'?toLb(p.goalWeightKg).toFixed(1):p.goalWeightKg.toFixed(1)} ${weightUnitChoice}`;
+  const deltaEl = document.getElementById('weightDelta');
+  if(state.entries.length>1){
+    const dd = weightUnitChoice==='lb'? toLb(Math.abs(diff)).toFixed(1) : Math.abs(diff).toFixed(1);
+    deltaEl.textContent = diff<=0 ? `↓ ${dd} ${weightUnitChoice} since last entry` : `↑ ${dd} ${weightUnitChoice} since last entry`;
+    deltaEl.className = 'delta ' + (diff<=0 ? 'pos':'neg');
+  } else { deltaEl.textContent = 'Opening balance recorded'; deltaEl.className='delta'; }
+
+  const pct = progressPct(state);
+  document.getElementById('progressBar').style.width = pct+'%';
+  document.getElementById('progressPct').textContent = Math.round(pct)+'%';
+  document.getElementById('dashCloseDate').textContent = fmtDate(p.closeDateISO);
+  document.getElementById('streakCount').textContent = computeStreak(state.entries);
+
+  const list = document.getElementById('entryList');
+  if(!state.entries.length){ list.innerHTML = `<p class="empty-note">No entries yet — log your first one below.</p>`; }
+  else {
+    list.innerHTML = [...state.entries].slice(-8).reverse().map(e=>`
+      <div class="entry-row">
+        <div class="entry-left">
+          <span class="entry-date">${fmtDate(e.date)}</span>
+          ${e.note?`<span class="entry-note">${e.note}</span>`:''}
+        </div>
+        <span class="entry-weight mono">${weightUnitChoice==='lb'?toLb(e.weightKg).toFixed(1):e.weightKg.toFixed(1)} ${weightUnitChoice}</span>
+      </div>`).join('');
+  }
+
+  const grid = document.getElementById('badgeGrid');
+  grid.innerHTML = badgeDefs.map(b=>{
+    const unlocked = b.test(state);
+    return `<div class="badge ${unlocked?'unlocked':''}"><span class="b-icon">${b.icon}</span><span>${b.name}</span></div>`;
+  }).join('');
+
+  document.getElementById('logUnitLabel').textContent = weightUnitChoice;
+}
+
+/* ===================== LOG ENTRY ===================== */
+function openSheet(id){
+  document.getElementById(id).classList.add('active');
+  document.getElementById(id.replace('Sheet','Backdrop')).classList.add('active');
+}
+function closeSheet(id){
+  document.getElementById(id).classList.remove('active');
+  document.getElementById(id.replace('Sheet','Backdrop')).classList.remove('active');
+}
+function submitEntry(){
+  const val = parseFloat(document.getElementById('logWeightInput').value);
+  if(!val){ return; }
+  const note = document.getElementById('logNoteInput').value.trim();
+  const kg = toKg(val, weightUnitChoice);
+  state.entries.push({ date:new Date().toISOString(), weightKg:kg, note });
+  save();
+  closeSheet('logSheet');
+  document.getElementById('logWeightInput').value='';
+  document.getElementById('logNoteInput').value='';
+  renderDashboard();
+  showToast('Entry saved to your ledger');
+}
+function unlockPremium(){ state.premium=true; save(); closeSheet('premiumSheet'); showToast('Premium unlocked'); }
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+function resetAccount(){
+  if(confirm('This clears all local data on this device. Continue?')){
+    localStorage.removeItem(LS_KEY);
+    location.reload();
+  }
+}
+
+/* ===================== BOOT ===================== */
+if(state.onboarded){
+  weightUnitChoice = state.profile.weightUnit || 'lb';
+  renderDashboard();
+  goTo('dashboard');
+} else {
+  renderQuestion();
+}
+
+/* ===================== SERVICE WORKER ===================== */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
